@@ -1,19 +1,12 @@
-from migen.fhdl.structure import *
-from migen.fhdl.specials import SynthesisDirective
+from migen import *
+from migen.build.xilinx.common import XilinxMultiReg
+from migen.build.xilinx.vivado import XilinxVivadoToolchain
 from migen.fhdl import verilog
 from migen.genlib.cdc import *
 
-class XilinxMultiRegImpl(MultiRegImpl):
-	def get_fragment(self):
-		disable_srl = set(SynthesisDirective("attribute shreg_extract of {r} is no", r=r)
-			for r in self.regs)
-		return MultiRegImpl.get_fragment(self) + Fragment(specials=disable_srl)
-
-class XilinxMultiReg:
-	@staticmethod
-	def lower(dr):
-		return XilinxMultiRegImpl(dr.i, dr.o, dr.odomain, dr.n)
-
-ps = PulseSynchronizer("from", "to")
-v = verilog.convert(ps, {ps.i, ps.o}, special_overrides={MultiReg: XilinxMultiReg})
-print(v)
+if __name__ == "__main__":
+    ps = PulseSynchronizer("from", "to")
+    v = verilog.convert(ps, {ps.i, ps.o},
+            special_overrides={MultiReg: XilinxMultiReg},
+            attr_translate=XilinxVivadoToolchain.attr_translate)
+    print(v)

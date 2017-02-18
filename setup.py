@@ -1,37 +1,40 @@
 #!/usr/bin/env python3
 
-import sys, os
+import sys
 from setuptools import setup
 from setuptools import find_packages
 
-here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, "README")).read()
 
-required_version = (3, 1)
-if sys.version_info < required_version:
-	raise SystemExit("Migen requires python {0} or greater".format(
-		".".join(map(str, required_version))))
+if sys.version_info[:3] < (3, 3):
+    raise SystemExit("You need Python 3.3+")
+
+
+requirements = [
+    "sphinx", "sphinx_rtd_theme", "colorama"
+]
 
 setup(
-	name="migen",
-	version="unknown",
-	description="Python toolbox for building complex digital hardware",
-	long_description=README,
-	author="Sebastien Bourdeauducq",
-	author_email="sebastien@milkymist.org",
-	url="http://www.milkymist.org",
-	download_url="https://github.com/milkymist/migen",
-	packages=find_packages(here),
-	license="GPL",
-	platforms=["Any"],
-	keywords="HDL ASIC FPGA hardware design",
-	classifiers=[
-		"Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
-		"Environment :: Console",
-		"Development Status :: Alpha",
-		"Intended Audience :: Developers",
-		"License :: OSI Approved :: GNU General Public License (GPL)",
-		"Operating System :: OS Independent",
-		"Programming Language :: Python",
-	],
+    name="migen",
+    version="0.5.dev",
+    description="Python toolbox for building complex digital hardware",
+    long_description=open("README.md").read(),
+    author="Sebastien Bourdeauducq",
+    author_email="sb@m-labs.hk",
+    url="https://m-labs.hk",
+    download_url="https://github.com/m-labs/migen",
+    packages=find_packages(),
+    install_requires=requirements,
+    test_suite="migen.test",
+    license="BSD",
+    platforms=["Any"],
+    keywords="HDL ASIC FPGA hardware design",
+    classifiers=[
+        "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+        "Environment :: Console",
+        "Development Status :: Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+    ],
 )

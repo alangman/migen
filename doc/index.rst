@@ -6,7 +6,6 @@ Migen manual
 
    introduction
    fhdl
-   bus
-   dataflow
    simulation
-   casestudies
+   synthesis
+   reference
