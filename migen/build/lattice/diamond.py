@@ -7,6 +7,7 @@ import subprocess
 import shutil
 
 from migen.fhdl.structure import _Fragment
+from migen.fhdl.verilog import DummyAttrTranslate
 
 from migen.build.generic_platform import *
 from migen.build import tools
@@ -56,6 +57,7 @@ def _build_files(device, sources, vincpaths, build_name):
     tcl.append("prj_run Map -impl implementation")
     tcl.append("prj_run PAR -impl implementation")
     tcl.append("prj_run Export -impl implementation -task Bitgen")
+    tcl.append("prj_run Export -impl implementation -task Jedecgen")
     tools.write_to_file(build_name + ".tcl", "\n".join(tcl))
 
 
@@ -67,6 +69,7 @@ def _run_diamond(build_name, source, ver=None):
         tools.write_to_file(build_script_file, build_script_contents)
         r = subprocess.call([build_script_file])
         shutil.copy(os.path.join("implementation", build_name + "_implementation.bit"), build_name + ".bit")
+        shutil.copy(os.path.join("implementation", build_name + "_implementation.jed"), build_name + ".jed")
     else:
         raise NotImplementedError
 
@@ -75,6 +78,10 @@ def _run_diamond(build_name, source, ver=None):
 
 
 class LatticeDiamondToolchain:
+    attr_translate = DummyAttrTranslate()
+
+    special_overrides = common.diamond_special_overrides
+
     def build(self, platform, fragment, build_dir="build", build_name="top",
               toolchain_path="/opt/Diamond", run=True):
         os.makedirs(build_dir, exist_ok=True)

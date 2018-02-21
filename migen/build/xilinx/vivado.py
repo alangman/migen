@@ -75,6 +75,9 @@ class XilinxVivadoToolchain:
         "keep": ("dont_touch", "true"),
         "no_retiming": ("dont_touch", "true"),
         "async_reg": ("async_reg", "true"),
+        "mr_ff": ("mr_ff", "true"),  # user-defined attribute
+        "ars_ff1": ("ars_ff1", "true"),  # user-defined attribute
+        "ars_ff2": ("ars_ff2", "true"),  # user-defined attribute
         "no_shreg_extract": None
     }
 
@@ -88,6 +91,7 @@ class XilinxVivadoToolchain:
 
     def _build_batch(self, platform, sources, build_name):
         tcl = []
+        tcl.append("create_project -force -name {} -part {}".format(build_name, platform.device))
         for filename, language, library in sources:
             filename_tcl = "{" + filename + "}"
             tcl.append("add_files " + filename_tcl)
@@ -101,17 +105,22 @@ class XilinxVivadoToolchain:
             tcl.append("synth_design -top top -part {} -include_dirs {{{}}}".format(platform.device, " ".join(platform.verilog_include_paths)))
         else:
             tcl.append("synth_design -top top -part {}".format(platform.device))
+        tcl.append("write_checkpoint -force {}_synth.dcp".format(build_name))
+        tcl.append("report_timing_summary -file {}_timing_synth.rpt".format(build_name))
         tcl.append("report_utilization -hierarchical -file {}_utilization_hierarchical_synth.rpt".format(build_name))
         tcl.append("report_utilization -file {}_utilization_synth.rpt".format(build_name))
+        tcl.append("opt_design")
         tcl.append("place_design")
         if self.with_phys_opt:
             tcl.append("phys_opt_design -directive AddRetime")
+        tcl.append("write_checkpoint -force {}_place.dcp".format(build_name))
         tcl.append("report_utilization -hierarchical -file {}_utilization_hierarchical_place.rpt".format(build_name))
         tcl.append("report_utilization -file {}_utilization_place.rpt".format(build_name))
         tcl.append("report_io -file {}_io.rpt".format(build_name))
         tcl.append("report_control_sets -verbose -file {}_control_sets.rpt".format(build_name))
         tcl.append("report_clock_utilization -file {}_clock_utilization.rpt".format(build_name))
         tcl.append("route_design")
+        tcl.append("write_checkpoint -force {}_route.dcp".format(build_name))
         tcl.append("report_route_status -file {}_route_status.rpt".format(build_name))
         tcl.append("report_drc -file {}_drc.rpt".format(build_name))
         tcl.append("report_timing_summary -datasheet -max_paths 10 -file {}_timing.rpt".format(build_name))
@@ -131,17 +140,39 @@ class XilinxVivadoToolchain:
                 " [get_nets {clk}]", clk=clk)
         for from_, to in sorted(self.false_paths,
                                 key=lambda x: (x[0].duid, x[1].duid)):
-            if (from_ not in self.clocks
-                    or to not in self.clocks):
-                raise ValueError("Vivado requires period "
-                                 "constraints on all clocks used in false paths")
             platform.add_platform_command(
-                "set_false_path -from [get_clocks {from_}] -to [get_clocks {to}]",
+                "set_clock_groups "
+                "-group [get_clocks -include_generated_clocks -of [get_nets {from_}]] "
+                "-group [get_clocks -include_generated_clocks -of [get_nets {to}]] "
+                "-asynchronous",
                 from_=from_, to=to)
 
         # make sure add_*_constraint cannot be used again
         del self.clocks
         del self.false_paths
+
+    def _constrain(self, platform):
+        # The asynchronous input to a MultiReg is a false path
+        platform.add_platform_command(
+            "set_false_path -quiet "
+            "-to [get_nets -filter {{mr_ff == TRUE}}]"
+        )
+        # The asychronous reset input to the AsyncResetSynchronizer is a false
+        # path
+        platform.add_platform_command(
+            "set_false_path -quiet "
+            "-to [get_pins -filter {{REF_PIN_NAME == PRE}} "
+                "-of [get_cells -filter {{ars_ff1 == TRUE || ars_ff2 == TRUE}}]]"
+        )
+        # clock_period-2ns to resolve metastability on the wire between the
+        # AsyncResetSynchronizer FFs
+        platform.add_platform_command(
+            "set_max_delay 2 -quiet "
+            "-from [get_pins -filter {{REF_PIN_NAME == Q}} "
+                "-of [get_cells -filter {{ars_ff1 == TRUE}}]] "
+            "-to [get_pins -filter {{REF_PIN_NAME == D}} "
+                "-of [get_cells -filter {{ars_ff2 == TRUE}}]]"
+        )
 
     def build(self, platform, fragment, build_dir="build", build_name="top",
             toolchain_path="/opt/Xilinx/Vivado", source=True, run=True):
@@ -153,6 +184,7 @@ class XilinxVivadoToolchain:
             fragment = fragment.get_fragment()
         platform.finalize(fragment)
         self._convert_clocks(platform)
+        self._constrain(platform)
         v_output = platform.get_verilog(fragment)
         named_sc, named_pc = platform.resolve_signals(v_output.ns)
         v_file = build_name + ".v"
@@ -173,4 +205,5 @@ class XilinxVivadoToolchain:
         self.clocks[clk] = period
 
     def add_false_path_constraint(self, platform, from_, to):
-        self.false_paths.add((from_, to))
+        if (to, from_) not in self.false_paths:
+            self.false_paths.add((from_, to))
