@@ -18,6 +18,13 @@ _io = [
         Subsignal("miso", Pins("17"), IOStandard("LVCMOS33"))
     ),
 
+    ("serial",0,
+        Subsignal("cts",Pins("23")),
+        Subsignal("rts",Pins("25")),
+        Subsignal("tx",Pins("26")),
+        Subsignal("rx",Pins("27")),
+        IOStandard("LVCMOS33")
+    )
 ]
 
 _connectors = [
@@ -31,6 +38,8 @@ _connectors = [
 
 
 class Platform(LatticePlatform):
+    default_clk_name = "clk48MHz"
+    default_clk_period = 21
     def __init__(self):
         LatticePlatform.__init__(self, "ice40-up5k-sg48", _io, _connectors,
                                  toolchain="icestorm")

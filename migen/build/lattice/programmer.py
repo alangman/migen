@@ -21,11 +21,11 @@ class LatticeProgrammer(GenericProgrammer):
 class IceStormProgrammer(GenericProgrammer):
     needs_bitreverse = False
 
-    def flash(self, address, bitstream_file):
-        subprocess.call(["iceprog", "-o", str(address), bitstream_file])
+    def flash(self, address, bitstream_file,usb_device=""):
+        subprocess.run(["iceprog", "-d",usb_device,"-o", str(address), bitstream_file])
 
     def load_bitstream(self, bitstream_file):
-        subprocess.call(["iceprog", "-S", bitstream_file])
+        subprocess.run(["iceprog", "-S", bitstream_file])
 
 
 class IceBurnProgrammer(GenericProgrammer):
