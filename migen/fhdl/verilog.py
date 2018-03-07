@@ -1,6 +1,7 @@
 from functools import partial
 from operator import itemgetter
 import collections
+import logging
 
 from migen.fhdl.structure import *
 from migen.fhdl.structure import _Operator, _Slice, _Assign, _Fragment
@@ -330,7 +331,11 @@ def convert(f, ios=None, name="top",
                 f.clock_domains.append(cd)
                 ios |= {cd.clk, cd.rst}
             else:
-                raise KeyError("Unresolved clock domain: '"+cd_name+"'")
+                msg = "Available clock domains:\n"
+                for name in sorted(list_clock_domains(f)):
+                    msg += "- "+name+"\n"
+                logging.error(msg)
+                raise KeyError("Unresolved clock domain: \""+cd_name+"\"")
 
     f = lower_complex_slices(f)
     insert_resets(f)

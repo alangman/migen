@@ -127,25 +127,16 @@ _io = [
     ("eth_clocks", 0,
         Subsignal("tx", Pins("M22")),
         Subsignal("rx", Pins("AG11")),
-        IOStandard("LVCMOS33")
+        IOStandard("LVCMOS33"), Misc("SLEW=FAST"), Drive(16)
     ),
-    ("eth_mii", 0,
-        Subsignal("rx_dv", Pins("T24")),
-        Subsignal("rx_data", Pins("R23 P23 R25 R26")),
-        Subsignal("tx_en", Pins("N22")),
-        Subsignal("tx_data", Pins("K20 K22 P20 P21")),
-        Subsignal("mdc", Pins("T27")),
-        Subsignal("mdio", Pins("R27")),
-        IOStandard("LVCMOS33")
-    ),
-    ("eth_rgmii", 0,
+    ("eth", 0,
         Subsignal("rx_ctl", Pins("T24")),
         Subsignal("rx_data", Pins("R23 P23 R25 R26")),
         Subsignal("tx_ctl", Pins("N22")),
         Subsignal("tx_data", Pins("K20 K22 P20 P21")),
         Subsignal("mdc", Pins("T27")),
         Subsignal("mdio", Pins("R27")),
-        IOStandard("LVCMOS33")
+        IOStandard("LVCMOS33"), Misc("SLEW=FAST"), Drive(16)
     ),
 
     ("sma_io", 0,
@@ -330,6 +321,13 @@ class Platform(XilinxPlatform):
         XilinxPlatform.__init__(
                 self, "xcku040-ffva1156-1-c", _io, _connectors,
                 toolchain="vivado")
+        self.toolchain.bitstream_commands.extend([
+            "set_property BITSTREAM.GENERAL.COMPRESS True [current_design]",
+            "set_property BITSTREAM.CONFIG.CONFIGRATE 33 [current_design]",
+            "set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]",
+            "set_property CFGBVS VCCO [current_design]",
+            "set_property CONFIG_VOLTAGE 3.3 [current_design]",
+            ])
 
     # We do not contrain Ethernet clocks here, since we do not know
     # if they are RGMII (125MHz) or MII (25MHz)
