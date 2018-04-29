@@ -5,7 +5,7 @@ from migen.build.altera import common, quartus
 class AlteraPlatform(GenericPlatform):
     bitstream_ext = ".sof"
 
-    def __init__(self, *args, toolchain="quartus", **kwargs):
+    def __init__(self, *args, toolchain="quartus",**kwargs):
         GenericPlatform.__init__(self, *args, **kwargs)
         if toolchain == "quartus":
             self.toolchain = quartus.AlteraQuartusToolchain()
