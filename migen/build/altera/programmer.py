@@ -6,7 +6,7 @@ from migen.build.generic_programmer import GenericProgrammer
 class USBBlaster(GenericProgrammer):
     needs_bitreverse = False
 
-    def __init__(self, cable_name="USBBlaster", device_id=1):
+    def __init__(self, cable_name="Arrow-USB-Blaster", device_id=1):
         self.cable_name = cable_name
         self.device_id = device_id
 

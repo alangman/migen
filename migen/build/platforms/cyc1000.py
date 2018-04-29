@@ -6,7 +6,7 @@
 
 from migen.build.generic_platform import *
 from migen.build.altera import AlteraPlatform
-from migen.build.altera.programmer import USBArrowBlaster
+from migen.build.altera.programmer import USBBlaster,USBArrowBlaster
 
 
 _io = [
